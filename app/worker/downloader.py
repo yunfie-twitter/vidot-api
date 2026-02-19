@@ -27,22 +27,21 @@ def build_ytdlp_command(url: str, format: str, output_template: str) -> List[str
     cmd: List[str] = [
         settings.ytdlp_path,
         '--no-playlist',
-        '--no-warnings',
         '--progress',
         '--newline',
-        '-o', output_template
+        '-o', output_template,
     ]
     
     if format == 'mp3':
         cmd.extend([
             '-x',
             '--audio-format', 'mp3',
-            '--audio-quality', '0'
+            '--audio-quality', '0',
         ])
     else:  # mp4
         cmd.extend([
             '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-            '--merge-output-format', 'mp4'
+            '--merge-output-format', 'mp4',
         ])
     
     cmd.append(url)
@@ -105,19 +104,17 @@ def download_video(url: str, format: str) -> str:
     logger.info(f"Executing command: {' '.join(cmd)}")
     
     try:
-        # Execute yt-dlp with subprocess
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
-            universal_newlines=True
+            universal_newlines=True,
+            bufsize=1
         )
         
         output_file = None
         
-        # Parse output for progress and filename
+        # Process output line by line
         for line in process.stdout:
             logger.debug(line.strip())
             
@@ -132,9 +129,8 @@ def download_video(url: str, format: str) -> str:
         
         # Wait for process to complete
         return_code = process.wait()
-        
         if return_code != 0:
-            raise RuntimeError(f"yt-dlp exited with code {return_code}")
+            raise RuntimeError(f"yt-dlp failed with return code {return_code}")
         
         # If we couldn't parse the output file, try to find it
         if not output_file:
@@ -146,12 +142,8 @@ def download_video(url: str, format: str) -> str:
         
         update_progress(100.0)
         logger.info(f"Download completed: {output_file}")
-        
         return output_file
-    
-    except subprocess.SubprocessError as e:
-        logger.error(f"Subprocess error: {str(e)}")
-        raise RuntimeError(f"Download failed: {str(e)}")
+        
     except Exception as e:
-        logger.error(f"Download error: {str(e)}")
+        logger.error(f"Download failed: {str(e)}")
         raise RuntimeError(f"Download failed: {str(e)}")
