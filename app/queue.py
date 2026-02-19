@@ -14,6 +14,17 @@ redis_conn: Optional[Redis] = None
 queue: Optional[Queue] = None
 
 
+def _sanitize_for_log(value: str) -> str:
+    """
+    Remove characters from a string that could be used to inject
+    additional log entries (for example, newlines).
+    """
+    # Guard against None, though in our usage we only pass strings
+    if value is None:
+        return ""
+    return value.replace("\r", "").replace("\n", "")
+
+
 def init_redis() -> None:
     """Initialize Redis connection and queue."""
     global redis_conn, queue
@@ -90,7 +101,9 @@ def get_job_status(job_id: str) -> Optional[JobStatusResponse]:
     try:
         job = Job.fetch(job_id, connection=get_redis())
     except Exception as e:
-        logger.error(f"Job not found: {job_id} - {str(e)}")
+        safe_job_id = _sanitize_for_log(job_id)
+        safe_error = _sanitize_for_log(str(e))
+        logger.error(f"Job not found: {safe_job_id} - {safe_error}")
         return None
     
     # Determine status
