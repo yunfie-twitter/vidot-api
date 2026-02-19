@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: vidot-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - vidot-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vidot-api
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      - PORT=${PORT:-8000}
+      - DOWNLOAD_DIR=${DOWNLOAD_DIR:-/app/downloads}
+      - YTDLP_PATH=${YTDLP_PATH:-yt-dlp}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=${REDIS_DB:-0}
+      - QUEUE_CONCURRENCY=${QUEUE_CONCURRENCY:-2}
+      - QUEUE_NAME=${QUEUE_NAME:-download_queue}
+    volumes:
+      - downloads:/app/downloads
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - vidot-network
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vidot-worker
+    environment:
+      - DOWNLOAD_DIR=${DOWNLOAD_DIR:-/app/downloads}
+      - YTDLP_PATH=${YTDLP_PATH:-yt-dlp}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=${REDIS_DB:-0}
+      - QUEUE_CONCURRENCY=${QUEUE_CONCURRENCY:-2}
+      - QUEUE_NAME=${QUEUE_NAME:-download_queue}
+    volumes:
+      - downloads:/app/downloads
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - vidot-network
+    restart: unless-stopped
+    command: rq worker --with-scheduler --url redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/${REDIS_DB:-0} ${QUEUE_NAME:-download_queue}
+
+volumes:
+  redis_data:
+    driver: local
+  downloads:
+    driver: local
+
+networks:
+  vidot-network:
+    driver: bridge
