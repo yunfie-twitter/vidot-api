@@ -71,7 +71,9 @@ def enqueue_download(url: str, format: str) -> str:
         failure_ttl=86400
     )
     
-    logger.info(f"Job enqueued: {job.id} for URL: {url} (format: {format})")
+    safe_url = url.replace('\r', '').replace('\n', '')
+    safe_format = format.replace('\r', '').replace('\n', '')
+    logger.info(f"Job enqueued: {job.id} for URL: {safe_url} (format: {safe_format})")
     return job.id
 
 
