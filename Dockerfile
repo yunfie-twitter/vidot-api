@@ -1,10 +1,17 @@
 FROM python:3.11-slim
 
-# Install system dependencies for yt-dlp and ffmpeg
+# Install system dependencies for yt-dlp, ffmpeg, aria2c, and Deno
 RUN apt-get update && apt-get install -y \
     ffmpeg \
+    aria2 \
     curl \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Deno (JavaScript runtime for yt-dlp)
+RUN curl -fsSL https://deno.land/install.sh | sh
+ENV DENO_INSTALL="/root/.deno"
+ENV PATH="${DENO_INSTALL}/bin:${PATH}"
 
 # Install yt-dlp
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \

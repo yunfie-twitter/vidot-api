@@ -30,6 +30,9 @@ def build_ytdlp_command(url: str, format: str, output_template: str) -> List[str
         '--progress',
         '--newline',
         '-o', output_template,
+        # Use aria2c as external downloader for faster downloads
+        '--downloader', 'aria2c',
+        '--downloader-args', 'aria2c:-x 16 -s 16 -k 1M',
     ]
     
     if format == 'mp3':
@@ -75,7 +78,7 @@ def find_latest_file(directory: str, extensions: tuple = ('.mp4', '.mp3')) -> st
 
 def download_video(url: str, format: str) -> str:
     """
-    Download video using yt-dlp.
+    Download video using yt-dlp with Deno JS runtime and aria2c downloader.
     
     Args:
         url: Video URL to download
