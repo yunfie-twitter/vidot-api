@@ -70,7 +70,8 @@ async def create_download(request: DownloadRequest):
     """
     try:
         job_id = enqueue_download(request.url, request.format.value)
-        logger.info(f"Download job created: {job_id} for URL: {request.url}")
+        safe_url = request.url.replace('\r', '').replace('\n', '') if request.url is not None else ''
+        logger.info(f"Download job created: {job_id} for URL: {safe_url}")
         return DownloadResponse(jobId=job_id)
     except Exception as e:
         logger.error(f"Failed to create download job: {str(e)}")
