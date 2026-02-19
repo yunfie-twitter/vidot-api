@@ -11,6 +11,23 @@ from app.queue.status import determine_job_status
 logger = logging.getLogger(__name__)
 
 
+def _sanitize_for_log(value: str) -> str:
+    """
+    Remove characters from a string that could be used to inject
+    additional log entries (for example, newlines).
+    
+    Args:
+        value: String to sanitize
+    
+    Returns:
+        Sanitized string with \r and \n removed
+    """
+    # Guard against None, though in our usage we only pass strings
+    if value is None:
+        return ""
+    return value.replace("\r", "").replace("\n", "")
+
+
 def enqueue_download(url: str, format: str) -> str:
     """
     Enqueue a download job to RQ.
@@ -41,7 +58,10 @@ def enqueue_download(url: str, format: str) -> str:
         failure_ttl=86400   # Keep failure info for 24 hours
     )
     
-    logger.info(f"Job enqueued: {job.id} for URL: {url} (format: {format})")
+    # Sanitize values for logging to prevent log injection
+    safe_url = _sanitize_for_log(url)
+    safe_format = _sanitize_for_log(format)
+    logger.info(f"Job enqueued: {job.id} for URL: {safe_url} (format: {safe_format})")
     return job.id
 
 
@@ -65,7 +85,10 @@ def get_job_status(job_id: str) -> Optional[JobStatusResponse]:
     try:
         job = Job.fetch(job_id, connection=get_redis())
     except Exception as e:
-        logger.error(f"Job not found: {job_id} - {str(e)}")
+        # Sanitize values for logging to prevent log injection
+        safe_job_id = _sanitize_for_log(job_id)
+        safe_error = _sanitize_for_log(str(e))
+        logger.error(f"Job not found: {safe_job_id} - {safe_error}")
         return None
     
     # Determine status using status module
