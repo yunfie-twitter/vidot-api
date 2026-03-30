@@ -1,9 +1,9 @@
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
+fastapi==0.135.2
+uvicorn[standard]==0.42.0
 redis==5.0.1
 rq==1.16.1
-yt-dlp==2026.2.4
-python-dotenv==1.0.0
-pydantic==2.5.3
-pydantic-settings==2.1.0
+yt-dlp==2026.3.17
+python-dotenv==1.2.2
+pydantic==2.12.5
+pydantic-settings==2.13.1
 yt-dlp-ejs
